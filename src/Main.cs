@@ -23,6 +23,7 @@ namespace AudicaModding
 
         //for menu handling
         public static MenuState.State menuState;
+        public static OptionsMenu optionMenu;
         public static MenuState.State oldMenuState;
         public static bool menuSpawned = false;
         public static OptionsMenuButton toggleButton = null;
@@ -110,86 +111,19 @@ namespace AudicaModding
             //MelonModLogger.Log("Restart triggered");
             introSkipped = false;
         }
-
+        
         public override void OnUpdate()
         {
-            //Tracking menu state
             if (MenuState.sState == 0) return;
-
-            menuState = MenuState.GetState();
-            if (menuState != MenuState.State.SettingsPage) miscPageFound = false;
-            if (menuState == MenuState.State.SettingsPage && !miscPageFound)
-            {
-                OptionsMenu[] optionsMenus = GameObject.FindObjectsOfType<OptionsMenu>();
-
-                for (int i = 0; i < optionsMenus.Length; i++)
-                {
-                    if (optionsMenus[i].mPage == OptionsMenu.Page.Misc)
-                    {
-                        miscPageFound = true;
-                    }
-                }
-
-                if (miscPageFound && !menuSpawned)
-                {
-                    for (int i = 0; i < optionsMenus.Length; i++)
-                    {
-                        if (optionsMenus[i].mPage == OptionsMenu.Page.Misc)
-                        {
-
-
-                            string toggleText = "OFF";
-
-                            if (introSkip)
-                            {
-                                toggleText = "ON";
-                            }
-
-                            optionsMenus[i].AddHeader(0, "Skip Intro");
-
-                            toggleButton = optionsMenus[i].AddButton
-                                (0,
-                                toggleText,
-                                new Action(() =>
-                                {
-                                    if (introSkip)
-                                    {
-                                        introSkip = false;
-                                        toggleButton.label.text = "OFF";
-                                        SaveConfig();
-                                    }
-                                    else
-                                    {
-                                        introSkip = true;
-                                        toggleButton.label.text = "ON";
-                                        SaveConfig();
-                                    }
-                                }),
-                                null,
-                                "Skip Intro by pressing:\n" +
-                                "A on Oculus and Index\n" +
-                                "R Menu Button on Vive\n" +
-                                "");
-
-                            menuSpawned = true;
-                        }
-                    }
-                }
-                else if (!miscPageFound)
-                {
-                    menuSpawned = false;
-                }
-
-            }
 
             if (introSkip)
             {
-                if (!isPlaying && menuState == MenuState.State.Launched && AudioDriver.I is AudioDriver)
+                if (!isPlaying && MenuState.sState == MenuState.State.Launched && AudioDriver.I is AudioDriver)
                 {
                     isPlaying = true;
                 }
 
-                else if (isPlaying && (menuState != MenuState.State.Launched || AudioDriver.I is null))
+                else if (isPlaying && (MenuState.sState != MenuState.State.Launched || AudioDriver.I is null))
                 {
                     isPlaying = false;
                     introSkipped = false;
@@ -208,7 +142,7 @@ namespace AudicaModding
                                 {
                                     case VRHardwareSetup.VRHardwareMode.Cosmos:
                                         button = "X";
-                                        break;                              
+                                        break;
                                     case VRHardwareSetup.VRHardwareMode.Knuckles:
                                     case VRHardwareSetup.VRHardwareMode.OculusNative:
                                     case VRHardwareSetup.VRHardwareMode.OculusOpenVR:
@@ -238,6 +172,72 @@ namespace AudicaModding
                     }
                 }
             }
+
+            if (MenuState.sState == MenuState.State.Launched) return;
+            if (MenuState.sState != MenuState.State.SettingsPage) miscPageFound = false;
+            if (MenuState.sState == MenuState.State.SettingsPage && !miscPageFound)
+            {
+                if (OptionsMenu.I is OptionsMenu) optionMenu = OptionsMenu.I;
+                else return;
+
+                if (optionMenu.mPage == OptionsMenu.Page.Misc)
+                {
+                    miscPageFound = true;
+                }
+                
+
+                if (miscPageFound && !menuSpawned)
+                {
+
+                    if (optionMenu.mPage == OptionsMenu.Page.Misc)
+                    {
+
+
+                        string toggleText = "OFF";
+
+                        if (introSkip)
+                        {
+                            toggleText = "ON";
+                        }
+
+                        optionMenu.AddHeader(0, "Skip Intro");
+
+                        toggleButton = optionMenu.AddButton
+                            (0,
+                            toggleText,
+                            new Action(() =>
+                            {
+                                if (introSkip)
+                                {
+                                    introSkip = false;
+                                    toggleButton.label.text = "OFF";
+                                    SaveConfig();
+                                }
+                                else
+                                {
+                                    introSkip = true;
+                                    toggleButton.label.text = "ON";
+                                    SaveConfig();
+                                }
+                            }),
+                            null,
+                            "Skip Intro by pressing:\n" +
+                            "A on Oculus and Index\n" +
+                            "R Menu Button on Vive\n" +
+                            "");
+
+                        menuSpawned = true;
+                    }
+                    
+                }
+                else if (!miscPageFound)
+                {
+                    menuSpawned = false;
+                }
+
+            }
+
+            
         }
     }
 }

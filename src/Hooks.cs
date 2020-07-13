@@ -16,7 +16,7 @@ namespace AudicaModding
         {
             instance.PatchAll(Assembly.GetExecutingAssembly());
         }
-
+        
         [HarmonyPatch(typeof(AudioDriver), "StartPlaying")]
         private static class PatchStartPlaying
         {
@@ -29,13 +29,13 @@ namespace AudicaModding
             }
 
         }
-
+        
         [HarmonyPatch(typeof(OVRInput), "Update")]
         private static class PatchOVRUpdate
         {
             private static bool Prefix(OVRInput __instance)
             {
-                if (!AudicaMod.introSkip || AudicaMod.introSkipped || AudicaMod.skipQueued) return true;
+                if (!AudicaMod.introSkip || AudicaMod.introSkipped || AudicaMod.skipQueued || !AudicaMod.canSkip) return true;
 
                 if (OVRInput.Get(OVRInput.Button.One, OVRInput.Controller.All))
                 {
@@ -46,7 +46,7 @@ namespace AudicaModding
                 return true;
             }
         }
-
+        
         [HarmonyPatch(typeof(InGameUI), "Restart")]
         private static class PatchRestart
         {
@@ -55,7 +55,7 @@ namespace AudicaModding
                 AudicaMod.TriggerRestart();
             }
         }
-
+        
 
     }
 }
