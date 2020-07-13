@@ -19,6 +19,7 @@ namespace AudicaModding
         static public GameObject popup;
         static public VRHardwareSetup.VRHardwareMode hardware;
         static public string button = "";
+        static public int cachedFirstTick = 0;
 
 
         //for menu handling
@@ -77,15 +78,18 @@ namespace AudicaModding
 
         public static int GetFirstTick()
         {
-            SongList.SongData songData = SongDataHolder.I.songData;
-            KataConfig.Difficulty diff = KataConfig.I.GetDifficulty();
-            return SongCues.GetCues(songData, diff)[0].tick;
+            if(cachedFirstTick == 0)
+            {
+                SongList.SongData songData = SongDataHolder.I.songData;
+                KataConfig.Difficulty diff = KataConfig.I.GetDifficulty();
+                cachedFirstTick = SongCues.GetCues(songData, diff)[0].tick;
+            }
+            return cachedFirstTick;
         }
 
         public static float GetCurrentTick()
         {
-            SongList.SongData songData = SongDataHolder.I.songData;
-            return AudioDriver.I.GetTick(AudioDriver.TickContext.Audio);
+            return AudioDriver.I.mCachedTick;
         }
 
         //Queues an intro skip for when AudioDriver is not instantiated yet
@@ -99,9 +103,9 @@ namespace AudicaModding
         {
             if (GetCurrentTick() <= GetFirstTick() - 3840)
             {             
-                AudioDriver.I.JumpToTick(AudicaMod.GetFirstTick() - 1920);
-                AudicaMod.introSkipped = true;
-                AudicaMod.skipQueued = false;
+                AudioDriver.I.JumpToTick(GetFirstTick() - 1920);
+                introSkipped = true;
+                skipQueued = false;
                 //MelonModLogger.Log("Intro skipped!");
             }
         }
@@ -131,45 +135,49 @@ namespace AudicaModding
 
                 if (isPlaying)
                 {
-                    if (GetCurrentTick() < GetFirstTick() - 3840 && !skipQueued && !introSkipped)
-                    {
-                        canSkip = true;
-                        if (popup is null || !popup.activeSelf)
-                        {
-                            if (button == "")
-                            {
-                                switch (VRHardwareSetup.I.hardware)
-                                {
-                                    case VRHardwareSetup.VRHardwareMode.Cosmos:
-                                        button = "X";
-                                        break;
-                                    case VRHardwareSetup.VRHardwareMode.Knuckles:
-                                    case VRHardwareSetup.VRHardwareMode.OculusNative:
-                                    case VRHardwareSetup.VRHardwareMode.OculusOpenVR:
-                                        button = "A";
-                                        break;
-                                    case VRHardwareSetup.VRHardwareMode.ViveWand:
-                                    case VRHardwareSetup.VRHardwareMode.WinMROpenVR:
-                                        button = "R Menu Button";
-                                        break;
-                                    case VRHardwareSetup.VRHardwareMode.Unknown:
-                                        button = "?";
-                                        break;
-                                }
-                            }
-                            popup = KataConfig.I.CreateDebugText("Skip Intro by pressing <color=#85e359>" + button + "</color>", new Vector3(0f, -1f, 5f), 3f, null, false, 0.001f).gameObject;
-                        }
-                    }
-                    else
-                    {
-                        if (canSkip) canSkip = false;
-                        if (popup is GameObject)
-                        {
-                            GameObject.Destroy(popup);
-                            popup = null;
-                        }
 
-                    }
+                        if (!skipQueued && !introSkipped && GetCurrentTick() < GetFirstTick() - 3840)
+                        {
+                            canSkip = true;
+                        
+                            if (popup is null)
+                            {
+                                if (button == "")
+                                {
+                                    switch (VRHardwareSetup.I.hardware)
+                                    {
+                                        case VRHardwareSetup.VRHardwareMode.Cosmos:
+                                            button = "X";
+                                            break;
+                                        case VRHardwareSetup.VRHardwareMode.Knuckles:
+                                        case VRHardwareSetup.VRHardwareMode.OculusNative:
+                                        case VRHardwareSetup.VRHardwareMode.OculusOpenVR:
+                                            button = "A";
+                                            break;
+                                        case VRHardwareSetup.VRHardwareMode.ViveWand:
+                                        case VRHardwareSetup.VRHardwareMode.WinMROpenVR:
+                                            button = "R Menu Button";
+                                            break;
+                                        case VRHardwareSetup.VRHardwareMode.Unknown:
+                                            button = "?";
+                                            break;
+                                    }
+                                }
+                                popup = KataConfig.I.CreateDebugText("Skip Intro by pressing <color=#85e359>" + button + "</color>", new Vector3(0f, -1f, 5f), 3f, null, false, 0.001f).gameObject;
+                            }
+                        }
+                        else
+                        {
+                            if (canSkip) canSkip = false;
+                            if (popup is GameObject)
+                            {
+                                GameObject.Destroy(popup);
+                                popup = null;
+                            }
+
+                        }
+                    
+                    
                 }
             }
 
@@ -221,10 +229,7 @@ namespace AudicaModding
                                 }
                             }),
                             null,
-                            "Skip Intro by pressing:\n" +
-                            "A on Oculus and Index\n" +
-                            "R Menu Button on Vive\n" +
-                            "");
+                            "Enables Intro Skipping");
 
                         menuSpawned = true;
                     }

@@ -29,6 +29,15 @@ namespace AudicaModding
             }
 
         }
+
+        [HarmonyPatch(typeof(LaunchPanel), "Play")]
+        private static class PatchLaunchPlay
+        {
+            private static void Prefix(LaunchPanel __instance)
+            {
+                AudicaMod.cachedFirstTick = 0;
+            }
+        }
         
         [HarmonyPatch(typeof(OVRInput), "Update")]
         private static class PatchOVRUpdate
